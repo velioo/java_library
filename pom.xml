@@ -18,5 +18,10 @@
 	    <artifactId>postgresql</artifactId>
 	    <version>42.2.5</version>
 	</dependency>
+	<dependency>
+	    <groupId>org.beryx</groupId>
+	    <artifactId>text-io</artifactId>
+	    <version>3.3.0</version>
+	</dependency>
   </dependencies>
 </project>
