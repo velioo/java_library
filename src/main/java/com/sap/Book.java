@@ -3,7 +3,7 @@ package com.sap;
 import java.util.Date;
 
 public class Book {
-	private int id;
+	private String id;
 	private String name;
 	private String author;
 	private String publisher;
@@ -11,7 +11,7 @@ public class Book {
 	private Date issueDate;
 	private boolean isAvailable;
 
-	public Book(int id, String name, String author, String publisher, String language, Date issueDate,
+	public Book(String id, String name, String author, String publisher, String language, Date issueDate,
 			boolean isAvailable) {
 		super();
 		this.id = id;
@@ -23,11 +23,11 @@ public class Book {
 		this.isAvailable = isAvailable;
 	}
 
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 

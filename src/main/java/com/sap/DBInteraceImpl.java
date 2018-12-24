@@ -9,18 +9,8 @@ public class DBInteraceImpl implements DBInterface {
 	private static final String dbUrl = "jdbc:postgresql://localhost/jlibrary?user=jlibrary";
 	private Connection connection;
 
-	public DBInteraceImpl() {
-		try {
-			this.connection = DriverManager.getConnection(dbUrl);
-		} catch (SQLException e) {
-			System.out.println("Failed to connect to db");
-			e.printStackTrace();
-		}
-	}
-
-	public PreparedStatement createPreparedStatement(String query) throws SQLException {
-		PreparedStatement preparedStatement = connection.prepareStatement(query);
-		return preparedStatement;
+	public DBInteraceImpl() throws SQLException {
+		this.connection = DriverManager.getConnection(dbUrl);
 	}
 
 	public Connection getConnection() {
@@ -29,6 +19,11 @@ public class DBInteraceImpl implements DBInterface {
 
 	public void setConnection(Connection connection) {
 		this.connection = connection;
+	}
+
+	public PreparedStatement createPreparedStatement(String query) throws SQLException {
+		PreparedStatement preparedStatement = connection.prepareStatement(query);
+		return preparedStatement;
 	}
 
 	/*

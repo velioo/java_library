@@ -1,22 +1,22 @@
 package com.sap;
 
 public class User {
-	private int id;
+	private String id;
 	private String username;
 	private String email;
 
-	public User(int id, String username, String email) {
+	public User(String id, String username, String email) {
 		super();
 		this.id = id;
 		this.username = username;
 		this.email = email;
 	}
 
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
