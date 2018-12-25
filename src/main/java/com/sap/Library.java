@@ -2,10 +2,14 @@ package com.sap;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.UUID;
 
 import org.beryx.textio.TextIO;
@@ -20,6 +24,7 @@ public class Library {
 	private Connection conn;
 	private User user;
 	private static final String EMAIL_ADDRESS_REGEX = "^[A-z0-9._%+-]+@[A-z0-9.-]+\\.[A-z]{2,6}$";
+	private static final String DATE_REGEX = "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$";
 
 	public Library() {
 		super();
@@ -51,6 +56,14 @@ public class Library {
 		this.books = books;
 	}
 
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
 	public void registerUser() {
 		String username = textIO.newStringInputReader().withMinLength(5).withMaxLength(20).withInputTrimming(true)
 				.read("Username");
@@ -75,23 +88,20 @@ public class Library {
 			ps.execute();
 
 			ResultSet rs = ps.getResultSet();
-			
+
 			if (rs.next()) {
-				String id = rs.getString(1);
-				
+				int id = rs.getInt(1);
+
 				user = new User(id, username, email);
 			} else {
 				assert false;
 			}
-			
-			System.out.println("User id: " + user.getId());
-			
+
 			ps.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			libraryMenu.showError("Failed to register user", 1002);
 		}
-
 	}
 
 	public boolean loginUser() {
@@ -103,7 +113,6 @@ public class Library {
 
 		try {
 			PreparedStatement preparedStatement = dbh.createPreparedStatement(query);
-
 			preparedStatement.setString(1, inputUsername);
 
 			ResultSet rs = preparedStatement.executeQuery();
@@ -112,7 +121,7 @@ public class Library {
 				return false;
 			} else {
 				do {
-					String id = rs.getString(1);
+					int id = rs.getInt(1);
 					String username = rs.getString(2);
 					String password = rs.getString(3);
 					String salt = rs.getString(4);
@@ -120,6 +129,7 @@ public class Library {
 
 					if (Hashing.sha256().hashString(inputPassword + salt, StandardCharsets.UTF_8).toString()
 							.equals(password)) {
+
 						user = new User(id, username, email);
 					} else {
 						return false;
@@ -137,6 +147,50 @@ public class Library {
 		}
 
 		return true;
+	}
+
+	public void addNewBook() {
+		String inputBookName = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true)
+				.read("Book title");
+		String inputBookAuthor = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true)
+				.read("Book author");
+		String inputBookIssueDate = textIO.newStringInputReader().withPattern(DATE_REGEX).withMaxLength(100)
+				.withInputTrimming(true).read("Book issue date (yyyy-MM-dd)");
+		String inputBookPublisher = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true)
+				.read("Book publisher");
+		String inputBookLanguage = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true)
+				.read("Book language");
+
+		String query = "INSERT INTO books(name, author, publisher, book_language, issue_date) VALUES (?, ?, ?, ?, ?)";
+
+		try {
+			PreparedStatement ps = dbh.createPreparedStatement(query);
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+
+			Date bookIssueDate = null;
+
+			try {
+				java.util.Date date = df.parse(inputBookIssueDate);
+				bookIssueDate = new Date(date.getTime());
+			} catch (ParseException e) {
+				libraryMenu.showError("Failed to add new book", 1005);
+				e.printStackTrace();
+			}
+			
+			assert bookIssueDate != null;
+
+			ps.setString(1, inputBookName);
+			ps.setString(2, inputBookAuthor);
+			ps.setString(3, inputBookPublisher);
+			ps.setString(4, inputBookPublisher);
+			ps.setDate(5, bookIssueDate);
+
+			ps.execute();
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to add new book", 1004);
+		}
 	}
 
 	// Add book => add new element in books => add new row in table books (DB)

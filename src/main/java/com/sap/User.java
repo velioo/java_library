@@ -1,22 +1,22 @@
 package com.sap;
 
 public class User {
-	private String id;
+	private int id;
 	private String username;
 	private String email;
 
-	public User(String id, String username, String email) {
+	public User(int id, String username, String email) {
 		super();
 		this.id = id;
 		this.username = username;
 		this.email = email;
 	}
 
-	public String getId() {
+	public int getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(int id) {
 		this.id = id;
 	}
 
@@ -35,5 +35,4 @@ public class User {
 	public void setEmail(String email) {
 		this.email = email;
 	}
-
 }

@@ -1,5 +1,8 @@
 package com.sap;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.beryx.textio.TextIO;
 import org.beryx.textio.TextIoFactory;
 import org.beryx.textio.TextTerminal;
@@ -11,6 +14,19 @@ public class LibraryMenu {
 	private static final String REGISTER = "Register";
 	private static final String LOGIN = "Login";
 	private static final String EMPTY_BOOKMARK = "EMPTY";
+	private static final String MAIN_MENU_LABEL_ADD_NEW_BOOK = "Add new book";
+	private static final String MAIN_MENU_LABEL_SEARCH_BOOK = "Search books";
+	private static final String MAIN_MENU_LABEL_LIST_PEOPLE = "List people who haven't returned books";
+	private static final String SEARCH_MENU_LABEL_SEARCH_BY_TITLE = "Search by title";
+	private static final String SEARCH_MENU_LABEL_COMBINED_SEARCH = "Combined search by title, author, issue date, publisher, language";
+	private static final String BOOK_MENU_LABEL_AVAILABILITY = "Check availability";
+	private static final String BOOK_MENU_LABEL_MARK_TAKEN = "Mark as taken";
+	private static final String BOOK_MENU_LABEL_MARK_AVAILABLE = "Mark as available";
+	private static final String BOOK_MENU_LABEL_SET_DEADLINE = "Set return deadline";
+	private static final String BOOK_MENU_LABEL_REMOVE_BOOK = "Remove book";
+	private static final ArrayList<String> mainMenuPossibleValues = new ArrayList<String>();
+	private static final ArrayList<String> searchMenuPossibleValues = new ArrayList<String>();
+	private static final ArrayList<String> bookMenuPossibleValues = new ArrayList<String>();
 
 	public LibraryMenu(Library library) {
 		initializeMenu();
@@ -23,11 +39,22 @@ public class LibraryMenu {
 
 		this.terminal.setBookmark(EMPTY_BOOKMARK);
 
-		terminal.registerHandler("ctrl M", t -> {
-			authorizeUser();
-			return null;
-		});
+		/*
+		 * terminal.registerHandler("ctrl L", t -> { authorizeUser(); return null; });
+		 */
 
+		mainMenuPossibleValues.add(MAIN_MENU_LABEL_ADD_NEW_BOOK);
+		mainMenuPossibleValues.add(MAIN_MENU_LABEL_SEARCH_BOOK);
+		mainMenuPossibleValues.add(MAIN_MENU_LABEL_LIST_PEOPLE);
+
+		searchMenuPossibleValues.add(SEARCH_MENU_LABEL_SEARCH_BY_TITLE);
+		searchMenuPossibleValues.add(SEARCH_MENU_LABEL_COMBINED_SEARCH);
+
+		bookMenuPossibleValues.add(BOOK_MENU_LABEL_AVAILABILITY);
+		bookMenuPossibleValues.add(BOOK_MENU_LABEL_MARK_TAKEN);
+		bookMenuPossibleValues.add(BOOK_MENU_LABEL_MARK_AVAILABLE);
+		bookMenuPossibleValues.add(BOOK_MENU_LABEL_SET_DEADLINE);
+		bookMenuPossibleValues.add(BOOK_MENU_LABEL_REMOVE_BOOK);
 		// terminal.resetToBookmark("EMPTY");
 		// String user = textIO.newStringInputReader()
 		// .withDefaultValue("admin")
@@ -70,9 +97,14 @@ public class LibraryMenu {
 	public void printHeader(String message) {
 		terminal.println(
 				"----------------------------------------------------------------------------------------------------------------");
-		terminal.println("| " + message + " | Press Ctrl + M to go to Main Menu");
+		terminal.println("| " + message + " | Ctrl + Q to exit");
 		terminal.println(
 				"----------------------------------------------------------------------------------------------------------------");
+	}
+
+	public void showSuccessScreen(String msg) {
+		terminal.println("You've successfully " + msg + "!");
+		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to return to Main Menu");
 	}
 
 	public void authorizeUser() {
@@ -81,7 +113,7 @@ public class LibraryMenu {
 		printHeader("Select Option");
 		terminal.setBookmark("SELECT OPTION");
 
-		String option = getTextIO().newStringInputReader().withNumberedPossibleValues(REGISTER, LOGIN).read("Option");
+		String option = textIO.newStringInputReader().withNumberedPossibleValues(REGISTER, LOGIN).read("Option");
 
 		if (option.equals(REGISTER)) {
 			showRegisterScreen();
@@ -110,6 +142,48 @@ public class LibraryMenu {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
 
 		printHeader("Login");
+	}
+
+	public void runMainMenu() {
+		terminal.resetToBookmark(EMPTY_BOOKMARK);
+
+		while (true) {
+			terminal.resetToBookmark(EMPTY_BOOKMARK);
+			printHeader("Main Menu");
+
+			String option = textIO.newStringInputReader().withNumberedPossibleValues(mainMenuPossibleValues)
+					.read("Option");
+
+			if (option.equals(MAIN_MENU_LABEL_ADD_NEW_BOOK)) {
+				showAddBookScreen();
+				library.addNewBook();
+				showSuccessScreen("Added new book");
+			} else if (option.equals(MAIN_MENU_LABEL_SEARCH_BOOK)) {
+				showFindBookByTitleScreen();
+			} else if (option.equals(MAIN_MENU_LABEL_LIST_PEOPLE)) {
+				showCombinedSearchScreen();
+			} else {
+				assert false : "Option not implemented";
+			}
+		}
+	}
+
+	public void showAddBookScreen() {
+		terminal.resetToBookmark(EMPTY_BOOKMARK);
+
+		printHeader("Add new book");
+	}
+
+	public void showFindBookByTitleScreen() {
+		terminal.resetToBookmark(EMPTY_BOOKMARK);
+
+		printHeader("Find book by title");
+	}
+
+	public void showCombinedSearchScreen() {
+		terminal.resetToBookmark(EMPTY_BOOKMARK);
+
+		printHeader("Combined search. Find book by title, author, issue date, publisher and language");
 	}
 
 	public void showError(String msg, int code) {
