@@ -10,6 +10,7 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.beryx.textio.TextIO;
@@ -18,26 +19,65 @@ import com.google.common.hash.Hashing;
 
 public class Library {
 	private LibraryMenu libraryMenu;
-	private Book[] books;
+	private ArrayList<Book> books;
+	private ArrayList<Customer> customers;
 	private DBInteraceImpl dbh;
 	private TextIO textIO;
 	private Connection conn;
 	private User user;
 	private static final String EMAIL_ADDRESS_REGEX = "^[A-z0-9._%+-]+@[A-z0-9.-]+\\.[A-z]{2,6}$";
 	private static final String DATE_REGEX = "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$";
+	private String lastSearch;
 
 	public Library() {
 		super();
 		this.libraryMenu = new LibraryMenu(this);
 		this.textIO = libraryMenu.getTextIO();
+		this.books = new ArrayList<Book>();
+		this.customers = new ArrayList<Customer>();
 
 		try {
 			this.dbh = new DBInteraceImpl();
 			this.conn = dbh.getConnection();
+
+			initBooks();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			libraryMenu.showError("Failed to connect to the database", 1001);
+			libraryMenu.showError("Failed to initialize library", 1001);
 		}
+	}
+
+	public void initBooks() throws SQLException {
+		String query = "SELECT b.id as book_id, b.name as book_name, b.author, b.publisher, b.book_language, b.issue_date,"
+				+ "tb.return_date, c.id as customer_id, c.first_name, c .last_name, c.email FROM books b "
+				+ "LEFT JOIN taken_books tb ON tb.book_id = b.id LEFT JOIN customers c ON c.id = tb.customer_id";
+
+		books.clear();
+
+		Statement st = conn.createStatement();
+
+		ResultSet rs = st.executeQuery(query);
+
+		while (rs.next()) {
+			int bookId = rs.getInt(1);
+			String bookName = rs.getString(2);
+			String bookAuthor = rs.getString(3);
+			String bookPublisher = rs.getString(4);
+			String bookLanguage = rs.getString(5);
+			Date bookIssueDate = rs.getDate(6);
+			Date bookReturnDate = rs.getDate(7);
+			int customerId = rs.getInt(8);
+			String customerFirstName = rs.getString(9);
+			String customerLastName = rs.getString(10);
+			String customerEmail = rs.getString(11);
+
+			Customer customer = new Customer(customerId, customerFirstName, customerLastName, customerEmail);
+
+			books.add(new Book(bookId, bookName, bookAuthor, bookPublisher, bookLanguage, bookIssueDate, bookReturnDate,
+					customer));
+		}
+
+		rs.close();
 	}
 
 	public LibraryMenu getLibraryMenu() {
@@ -48,11 +88,11 @@ public class Library {
 		this.libraryMenu = libraryMenu;
 	}
 
-	public Book[] getBooks() {
+	public ArrayList<Book> getBooks() {
 		return books;
 	}
 
-	public void setBooks(Book[] books) {
+	public void setBooks(ArrayList<Book> books) {
 		this.books = books;
 	}
 
@@ -62,6 +102,14 @@ public class Library {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public String getLastSearch() {
+		return lastSearch;
+	}
+
+	public void setLastSearch(String lastSearch) {
+		this.lastSearch = lastSearch;
 	}
 
 	public void registerUser() {
@@ -161,7 +209,7 @@ public class Library {
 		String inputBookLanguage = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true)
 				.read("Book language");
 
-		String query = "INSERT INTO books(name, author, publisher, book_language, issue_date) VALUES (?, ?, ?, ?, ?)";
+		String query = "INSERT INTO books(name, author, publisher, book_language, issue_date) VALUES (?, ?, ?, ?, ?) RETURNING id, name, author, publisher, book_language, issue_date";
 
 		try {
 			PreparedStatement ps = dbh.createPreparedStatement(query);
@@ -176,21 +224,77 @@ public class Library {
 				libraryMenu.showError("Failed to add new book", 1005);
 				e.printStackTrace();
 			}
-			
+
 			assert bookIssueDate != null;
 
 			ps.setString(1, inputBookName);
 			ps.setString(2, inputBookAuthor);
 			ps.setString(3, inputBookPublisher);
-			ps.setString(4, inputBookPublisher);
+			ps.setString(4, inputBookLanguage);
 			ps.setDate(5, bookIssueDate);
 
 			ps.execute();
+
+			ResultSet rs = ps.getResultSet();
+
+			if (rs.next()) {
+				int bookId = rs.getInt(1);
+				String bookName = rs.getString(2);
+				String bookAuthor = rs.getString(3);
+				String bookPublisher = rs.getString(4);
+				String bookLanguage = rs.getString(5);
+				Date issueDate = rs.getDate(6);
+
+				books.add(new Book(bookId, bookName, bookAuthor, bookPublisher, bookLanguage, issueDate));
+			} else {
+				assert false;
+			}
+
 			ps.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			libraryMenu.showError("Failed to add new book", 1004);
 		}
+	}
+
+	public void addNewCustomer() {
+		String firstName = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true).read("First name");
+		String lastName = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true).read("Last name");
+		String email = textIO.newStringInputReader().withMinLength(5).withPattern(EMAIL_ADDRESS_REGEX)
+				.withInputTrimming(true).read("Email");
+
+		String query = "INSERT INTO customers(first_name, last_name, email) VALUES (?, ?, ?)";
+
+		try {
+			PreparedStatement ps = dbh.createPreparedStatement(query);
+
+			ps.setString(1, firstName);
+			ps.setString(2, lastName);
+			ps.setString(3, email);
+
+			ps.execute();
+
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to register user", 1002);
+		}
+	}
+
+	public ArrayList<Book> searchBookByTitle() {
+		String bookTitle = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true).read("Title");
+
+		lastSearch = bookTitle;
+
+		ArrayList<Book> matchedBooks = new ArrayList<Book>();
+
+		for (Book book : books) {
+			if (book.getName().toLowerCase().contains(bookTitle.toLowerCase())) {
+				matchedBooks.add(book);
+			}
+		}
+
+		return matchedBooks;
 	}
 
 	// Add book => add new element in books => add new row in table books (DB)

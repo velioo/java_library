@@ -1,18 +1,18 @@
 package com.sap;
 
-import java.util.Date;
+import java.sql.Date;
 
 public class Book {
-	private String id;
+	private int id;
 	private String name;
 	private String author;
 	private String publisher;
 	private String language;
 	private Date issueDate;
-	private boolean isAvailable;
+	private Date returnDate;
+	private Customer customer;
 
-	public Book(String id, String name, String author, String publisher, String language, Date issueDate,
-			boolean isAvailable) {
+	public Book(int id, String name, String author, String publisher, String language, Date issueDate) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -20,14 +20,25 @@ public class Book {
 		this.publisher = publisher;
 		this.language = language;
 		this.issueDate = issueDate;
-		this.isAvailable = isAvailable;
 	}
 
-	public String getId() {
+	public Book(int id, String name, String author, String publisher, String language, Date issueDate, Date returnDate, Customer customer) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.author = author;
+		this.publisher = publisher;
+		this.language = language;
+		this.issueDate = issueDate;
+		this.returnDate = returnDate;
+		this.customer = customer;
+	}
+
+	public int getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(int id) {
 		this.id = id;
 	}
 
@@ -72,11 +83,23 @@ public class Book {
 	}
 
 	public boolean isAvailable() {
-		return isAvailable;
+		return customer == null;
 	}
 
-	public void setAvailable(boolean isAvailable) {
-		this.isAvailable = isAvailable;
+	public Date getReturnDate() {
+		return returnDate;
+	}
+
+	public void setReturnDate(Date returnDate) {
+		this.returnDate = returnDate;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
 	}
 
 }
