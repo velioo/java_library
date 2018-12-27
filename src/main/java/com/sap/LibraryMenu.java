@@ -19,7 +19,7 @@ public class LibraryMenu {
 	private static final String MAIN_MENU_LABEL_SEARCH_BOOK = "Search books";
 	private static final String MAIN_MENU_LABEL_LIST_PEOPLE = "List people who haven't returned books";
 	private static final String MAIN_MENU_LABEL_ADD_NEW_CUSTOMER = "Add new customer";
-	private static final String MAIN_MENU_LABEL_EXIT  = "Exit";
+	private static final String MAIN_MENU_LABEL_EXIT = "Exit";
 	private static final String SEARCH_MENU_LABEL_SEARCH_BY_TITLE = "Search by title";
 	private static final String SEARCH_MENU_LABEL_COMBINED_SEARCH = "Combined search by title, author, issue date, publisher, language";
 	private static final String SEARCH_MENU_LABEL_BACK = "Return to Main Menu";
@@ -164,12 +164,13 @@ public class LibraryMenu {
 			} else if (option.equals(MAIN_MENU_LABEL_SEARCH_BOOK)) {
 				runSearchMenu();
 			} else if (option.equals(MAIN_MENU_LABEL_LIST_PEOPLE)) {
+				// TODO:
 				// showTakenBooksScreen();
 			} else if (option.equals(MAIN_MENU_LABEL_ADD_NEW_CUSTOMER)) {
 				showAddCustomerScreen();
 				library.addNewCustomer();
 				showSuccessScreen("Added new customer");
-			} else if (option.equals(MAIN_MENU_LABEL_EXIT)){
+			} else if (option.equals(MAIN_MENU_LABEL_EXIT)) {
 				terminal.dispose();
 				break;
 			} else {
@@ -192,6 +193,8 @@ public class LibraryMenu {
 				showMatchedBooks(books);
 			} else if (option.equals(SEARCH_MENU_LABEL_COMBINED_SEARCH)) {
 				showCombinedSearchScreen();
+				ArrayList<Book> books = library.searchBookCombined();
+				showMatchedBooks(books);
 			} else if (option.equals(SEARCH_MENU_LABEL_BACK)) {
 				break;
 			} else {
@@ -202,24 +205,27 @@ public class LibraryMenu {
 
 	public void showMatchedBooks(ArrayList<Book> books) {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
-		printHeader("Search results for '" + library.getLastSearch() + "'");
+		printHeader("Search results for \"" + library.getLastSearch() + "\"");
 
 		ArrayList<String> formatedBooks = new ArrayList<String>();
 
 		for (Book book : books) {
-			String formatedBook = book.getName() + " by " + book.getAuthor() + ", issue date - " + book.getIssueDate()
-					+ ", publisher - " + book.getPublisher() + ", language - " + book.getLanguage();
+			/*String formatedBook = "'" + book.getName() + "' by " + book.getAuthor() + ", issue date - "
+					+ book.getIssueDate() + ", publisher - " + book.getPublisher() + ", language - "
+					+ book.getLanguage();*/
+			String formatedBook = book.getName();
 
 			formatedBooks.add(formatedBook);
 		}
-		
+
 		formatedBooks.add(BOOK_MENU_LABEL_BACK);
 
-		String option = textIO.newStringInputReader().withNumberedPossibleValues(formatedBooks).read("Select book to process");
+		String option = textIO.newStringInputReader().withNumberedPossibleValues(formatedBooks)
+				.read("Select book to process");
 
-		if (! option.equals(BOOK_MENU_LABEL_BACK)) {
+		if (!option.equals(BOOK_MENU_LABEL_BACK)) {
 			// TODO: Create bookMenu
-			//runBookMenu();
+			// runBookMenu();
 		}
 	}
 

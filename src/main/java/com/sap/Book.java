@@ -22,7 +22,8 @@ public class Book {
 		this.issueDate = issueDate;
 	}
 
-	public Book(int id, String name, String author, String publisher, String language, Date issueDate, Date returnDate, Customer customer) {
+	public Book(int id, String name, String author, String publisher, String language, Date issueDate, Date returnDate,
+			Customer customer) {
 		super();
 		this.id = id;
 		this.name = name;

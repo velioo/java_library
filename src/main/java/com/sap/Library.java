@@ -213,11 +213,10 @@ public class Library {
 
 		try {
 			PreparedStatement ps = dbh.createPreparedStatement(query);
-			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-
 			Date bookIssueDate = null;
 
 			try {
+				DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 				java.util.Date date = df.parse(inputBookIssueDate);
 				bookIssueDate = new Date(date.getTime());
 			} catch (ParseException e) {
@@ -290,6 +289,53 @@ public class Library {
 
 		for (Book book : books) {
 			if (book.getName().toLowerCase().contains(bookTitle.toLowerCase())) {
+				matchedBooks.add(book);
+			}
+		}
+
+		return matchedBooks;
+	}
+
+	public ArrayList<Book> searchBookCombined() {
+		String bookTitle = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
+				.read("Title");
+		String bookAuthor = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
+				.read("Author");
+		String bookPublisher = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
+				.read("Publisher");
+		String bookIssueDate = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
+				.read("Issue date (yyyy-MM-dd)");
+		String bookLanguage = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
+				.read("Language");
+
+		lastSearch = "Title - '" + bookTitle + "', author - '" + bookAuthor + "', publisher - '" + bookPublisher
+				+ "', issue year - '" + bookIssueDate + "', language - '" + bookLanguage + "'";
+
+		ArrayList<Book> matchedBooks = new ArrayList<Book>();
+		Date issueDate = null;
+
+		if (!bookIssueDate.isEmpty()) {
+			try {
+				DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+				java.util.Date date = df.parse(bookIssueDate);
+				issueDate = new Date(date.getTime());
+			} catch (ParseException e) {
+				libraryMenu.showError("Failed to parse issue date", 1006);
+				e.printStackTrace();
+			}
+		}
+
+		for (Book book : books) {
+			if ((bookTitle.isEmpty()
+					|| !bookTitle.isEmpty() && book.getName().toLowerCase().contains(bookTitle.toLowerCase()))
+					&& (bookAuthor.isEmpty() || !bookAuthor.isEmpty()
+							&& book.getAuthor().toLowerCase().contains(bookAuthor.toLowerCase()))
+					&& (bookPublisher.isEmpty() || !bookPublisher.isEmpty()
+							&& book.getPublisher().toLowerCase().contains(bookPublisher.toLowerCase()))
+					&& (bookIssueDate.isEmpty()
+							|| !bookIssueDate.isEmpty() && book.getIssueDate().compareTo(issueDate) == 0)
+					&& (bookLanguage.isEmpty() || !bookLanguage.isEmpty()
+							&& book.getLanguage().toLowerCase().contains(bookLanguage.toLowerCase()))) {
 				matchedBooks.add(book);
 			}
 		}
