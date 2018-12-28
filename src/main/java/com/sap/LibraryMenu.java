@@ -41,13 +41,7 @@ public class LibraryMenu {
 	public void initializeMenu() {
 		this.textIO = TextIoFactory.getTextIO();
 		this.terminal = textIO.getTextTerminal();
-
 		this.terminal.setBookmark(EMPTY_BOOKMARK);
-
-		/*
-		 * terminal.registerHandler("ctrl L", t -> { authorizeUser(); return
-		 * null; });
-		 */
 
 		mainMenuPossibleValues.add(MAIN_MENU_LABEL_ADD_NEW_BOOK);
 		mainMenuPossibleValues.add(MAIN_MENU_LABEL_SEARCH_BOOK);
@@ -65,27 +59,6 @@ public class LibraryMenu {
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_SET_DEADLINE);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_REMOVE_BOOK);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_BACK);
-		// terminal.resetToBookmark("EMPTY");
-		// String user = textIO.newStringInputReader()
-		// .withDefaultValue("admin")
-		// .read("Username");
-		//
-		// String password = textIO.newStringInputReader()
-		// .withMinLength(6)
-		// .withInputMasking(true)
-		// .read("Password");
-		//
-		// int age = textIO.newIntInputReader()
-		// .withMinVal(13)
-		// .read("Age");
-		//
-		// Month month = textIO.newEnumInputReader(Month.class)
-		// .read("What month were you born in?");
-		//
-		// TextTerminal terminal = textIO.getTextTerminal();
-		// terminal.printf("\nUser %s is %d years old, was born in %s and has
-		// the password %s.\n",
-		// user, age, month, password);
 	}
 
 	public TextIO getTextIO() {
@@ -203,6 +176,46 @@ public class LibraryMenu {
 		}
 	}
 
+	public void runBookMenu(Book book) {
+		while (true) {
+			terminal.resetToBookmark(EMPTY_BOOKMARK);
+			printHeader("Select option");
+			terminal.println("Selected book: '" + book.getName() + "' by " + book.getAuthor() + ", issue date - "
+					+ book.getIssueDate() + ", publisher - " + book.getPublisher() + ", language - "
+					+ book.getLanguage());
+
+			terminal.println("Status: " + (book.isAvailable() ? "Available"
+					: "Taken by " + book.getCustomer().getBothNames() + " on " + book.getTakenDate()));
+
+			String option = textIO.newStringInputReader().withNumberedPossibleValues(bookMenuPossibleValues)
+					.read("Option");
+
+			if (option.equals(BOOK_MENU_LABEL_AVAILABILITY)) {
+
+			} else if (option.equals(BOOK_MENU_LABEL_MARK_TAKEN)) {
+
+			} else if (option.equals(BOOK_MENU_LABEL_MARK_AVAILABLE)) {
+
+			} else if (option.equals(BOOK_MENU_LABEL_SET_DEADLINE)) {
+
+			} else if (option.equals(BOOK_MENU_LABEL_REMOVE_BOOK)) {
+
+				if (!book.isAvailable()) {
+					showFailScreen("Cannot remove book which is taken by someone");
+					continue;
+				}
+
+				library.removeBook(book);
+				showSuccessScreen("Removed book '" + book.getName() + "'");
+				break;
+			} else if (option.equals(BOOK_MENU_LABEL_BACK)) {
+				break;
+			} else {
+				assert false : "Invalid option";
+			}
+		}
+	}
+
 	public void showMatchedBooks(ArrayList<Book> books) {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
 		printHeader("Search results for \"" + library.getLastSearch() + "\"");
@@ -210,9 +223,6 @@ public class LibraryMenu {
 		ArrayList<String> formatedBooks = new ArrayList<String>();
 
 		for (Book book : books) {
-			/*String formatedBook = "'" + book.getName() + "' by " + book.getAuthor() + ", issue date - "
-					+ book.getIssueDate() + ", publisher - " + book.getPublisher() + ", language - "
-					+ book.getLanguage();*/
 			String formatedBook = book.getName();
 
 			formatedBooks.add(formatedBook);
@@ -220,12 +230,25 @@ public class LibraryMenu {
 
 		formatedBooks.add(BOOK_MENU_LABEL_BACK);
 
-		String option = textIO.newStringInputReader().withNumberedPossibleValues(formatedBooks)
+		String bookTitle = textIO.newStringInputReader().withNumberedPossibleValues(formatedBooks)
 				.read("Select book to process");
 
-		if (!option.equals(BOOK_MENU_LABEL_BACK)) {
-			// TODO: Create bookMenu
-			// runBookMenu();
+		if (!bookTitle.equals(BOOK_MENU_LABEL_BACK)) {
+
+			Book selectedBook = null;
+
+			for (Book book : books) {
+				if (book.getName().equals(bookTitle)) {
+					selectedBook = book;
+				}
+			}
+
+			if (selectedBook != null) {
+				runBookMenu(selectedBook);
+			} else {
+				assert false : "Invalid selected book";
+			}
+
 		}
 	}
 
@@ -255,7 +278,12 @@ public class LibraryMenu {
 
 	public void showSuccessScreen(String msg) {
 		terminal.println("You've successfully " + msg + "!");
-		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to return to Main Menu");
+		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to continue");
+	}
+
+	public void showFailScreen(String msg) {
+		terminal.println(msg);
+		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to continue");
 	}
 
 	public void showError(String msg, int code) {

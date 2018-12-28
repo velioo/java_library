@@ -69,5 +69,9 @@ public class Customer {
 	public void setTakenBooks(ArrayList<Book> takenBooks) {
 		this.takenBooks = takenBooks;
 	}
+	
+	public String getBothNames() {
+		return getFirstName() + " " + getLastName();
+	}
 
 }

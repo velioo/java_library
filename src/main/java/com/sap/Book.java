@@ -10,6 +10,7 @@ public class Book {
 	private String language;
 	private Date issueDate;
 	private Date returnDate;
+	private Date takenDate;
 	private Customer customer;
 
 	public Book(int id, String name, String author, String publisher, String language, Date issueDate) {
@@ -23,7 +24,7 @@ public class Book {
 	}
 
 	public Book(int id, String name, String author, String publisher, String language, Date issueDate, Date returnDate,
-			Customer customer) {
+			Date takenDate, Customer customer) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -32,6 +33,7 @@ public class Book {
 		this.language = language;
 		this.issueDate = issueDate;
 		this.returnDate = returnDate;
+		this.takenDate = takenDate;
 		this.customer = customer;
 	}
 
@@ -93,6 +95,14 @@ public class Book {
 
 	public void setReturnDate(Date returnDate) {
 		this.returnDate = returnDate;
+	}
+
+	public Date getTakenDate() {
+		return takenDate;
+	}
+
+	public void setTakenDate(Date takenDate) {
+		this.takenDate = takenDate;
 	}
 
 	public Customer getCustomer() {

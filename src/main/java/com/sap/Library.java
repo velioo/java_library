@@ -11,8 +11,10 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import org.beryx.textio.InputReader.ValueChecker;
 import org.beryx.textio.TextIO;
 
 import com.google.common.hash.Hashing;
@@ -26,7 +28,7 @@ public class Library {
 	private Connection conn;
 	private User user;
 	private static final String EMAIL_ADDRESS_REGEX = "^[A-z0-9._%+-]+@[A-z0-9.-]+\\.[A-z]{2,6}$";
-	private static final String DATE_REGEX = "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$";
+	private static final String DATE_REGEX = "^$|(^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$)";
 	private String lastSearch;
 
 	public Library() {
@@ -49,8 +51,8 @@ public class Library {
 
 	public void initBooks() throws SQLException {
 		String query = "SELECT b.id as book_id, b.name as book_name, b.author, b.publisher, b.book_language, b.issue_date,"
-				+ "tb.return_date, c.id as customer_id, c.first_name, c .last_name, c.email FROM books b "
-				+ "LEFT JOIN taken_books tb ON tb.book_id = b.id LEFT JOIN customers c ON c.id = tb.customer_id";
+				+ "tb.return_date, tb.created_at, c.id as customer_id, c.first_name, c .last_name, c.email FROM books b "
+				+ "LEFT JOIN taken_books tb ON tb.book_id = b.id LEFT JOIN customers c ON c.id = tb.customer_id ORDER BY book_name ASC, author ASC";
 
 		books.clear();
 
@@ -59,22 +61,27 @@ public class Library {
 		ResultSet rs = st.executeQuery(query);
 
 		while (rs.next()) {
-			int bookId = rs.getInt(1);
+			Integer bookId = rs.getInt(1);
 			String bookName = rs.getString(2);
 			String bookAuthor = rs.getString(3);
 			String bookPublisher = rs.getString(4);
 			String bookLanguage = rs.getString(5);
 			Date bookIssueDate = rs.getDate(6);
 			Date bookReturnDate = rs.getDate(7);
-			int customerId = rs.getInt(8);
-			String customerFirstName = rs.getString(9);
-			String customerLastName = rs.getString(10);
-			String customerEmail = rs.getString(11);
+			Date bookTakenDate = rs.getDate(8);
+			Integer customerId = rs.getInt(9);
+			String customerFirstName = rs.getString(10);
+			String customerLastName = rs.getString(11);
+			String customerEmail = rs.getString(12);
 
-			Customer customer = new Customer(customerId, customerFirstName, customerLastName, customerEmail);
+			Customer customer = null;
+
+			if (customerId != 0) {
+				customer = new Customer(customerId, customerFirstName, customerLastName, customerEmail);
+			}
 
 			books.add(new Book(bookId, bookName, bookAuthor, bookPublisher, bookLanguage, bookIssueDate, bookReturnDate,
-					customer));
+					bookTakenDate, customer));
 		}
 
 		rs.close();
@@ -113,12 +120,12 @@ public class Library {
 	}
 
 	public void registerUser() {
-		String username = textIO.newStringInputReader().withMinLength(5).withMaxLength(20).withInputTrimming(true)
+		String username = textIO.newStringInputReader().withMinLength(5).withMaxLength(20)
+				.withValueChecker(new UserUsernameValueChecker(libraryMenu, dbh)).withInputTrimming(true)
 				.read("Username");
 		String password = textIO.newStringInputReader().withMinLength(6).withInputMasking(true).read("Password");
-
 		String email = textIO.newStringInputReader().withMinLength(5).withPattern(EMAIL_ADDRESS_REGEX)
-				.withInputTrimming(true).read("Email");
+				.withValueChecker(new UserEmailValueChecker(libraryMenu, dbh)).withInputTrimming(true).read("Email");
 
 		String query = "INSERT INTO users(username, password, email, salt) VALUES (?, ?, ?, ?) RETURNING id";
 
@@ -256,11 +263,34 @@ public class Library {
 		}
 	}
 
+	public void removeBook(Book book) {
+
+		assert books.contains(book) : "Cannot remove a book that doesn't exist in the library";
+
+		String query = "DELETE FROM books WHERE id = ?";
+
+		try {
+			PreparedStatement ps = dbh.createPreparedStatement(query);
+
+			ps.setInt(1, book.getId());
+
+			ps.executeUpdate();
+
+			books.remove(book);
+
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to remove book", 1007);
+		}
+	}
+
 	public void addNewCustomer() {
 		String firstName = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true).read("First name");
 		String lastName = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true).read("Last name");
 		String email = textIO.newStringInputReader().withMinLength(5).withPattern(EMAIL_ADDRESS_REGEX)
-				.withInputTrimming(true).read("Email");
+				.withValueChecker(new CustomerEmailValueChecker(libraryMenu, dbh)).withInputTrimming(true)
+				.read("Email");
 
 		String query = "INSERT INTO customers(first_name, last_name, email) VALUES (?, ?, ?)";
 
@@ -303,8 +333,8 @@ public class Library {
 				.read("Author");
 		String bookPublisher = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
 				.read("Publisher");
-		String bookIssueDate = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
-				.read("Issue date (yyyy-MM-dd)");
+		String bookIssueDate = textIO.newStringInputReader().withMinLength(0).withPattern(DATE_REGEX)
+				.withInputTrimming(true).read("Issue date (yyyy-MM-dd)");
 		String bookLanguage = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
 				.read("Language");
 
