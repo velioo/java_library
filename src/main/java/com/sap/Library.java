@@ -56,8 +56,7 @@ public class Library {
 
 		books.clear();
 
-		Statement st = conn.createStatement();
-
+		Statement st = dbh.createStatement();
 		ResultSet rs = st.executeQuery(query);
 
 		while (rs.next()) {
@@ -83,6 +82,8 @@ public class Library {
 			books.add(new Book(bookId, bookName, bookAuthor, bookPublisher, bookLanguage, bookIssueDate, bookReturnDate,
 					bookTakenDate, customer));
 		}
+
+		initCustomers();
 
 		rs.close();
 	}
@@ -119,6 +120,33 @@ public class Library {
 		this.lastSearch = lastSearch;
 	}
 
+	public ArrayList<Customer> getCustomers() {
+		return customers;
+	}
+
+	public void initCustomers() {
+		String query = "SELECT * FROM customers";
+
+		try {
+			Statement st = dbh.createStatement();
+			ResultSet rs = st.executeQuery(query);
+
+			while (rs.next()) {
+				int id = rs.getInt(1);
+				String firstName = rs.getString(2);
+				String lastName = rs.getString(3);
+				String email = rs.getString(4);
+
+				customers.add(new Customer(id, firstName, lastName, email));
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to init customers", 1011);
+		}
+	}
+
 	public void registerUser() {
 		String username = textIO.newStringInputReader().withMinLength(5).withMaxLength(20)
 				.withValueChecker(new UserUsernameValueChecker(libraryMenu, dbh)).withInputTrimming(true)
@@ -139,7 +167,6 @@ public class Library {
 			ps.setString(2, password_hash);
 			ps.setString(3, email);
 			ps.setString(4, salt);
-
 			ps.execute();
 
 			ResultSet rs = ps.getResultSet();
@@ -238,7 +265,6 @@ public class Library {
 			ps.setString(3, inputBookPublisher);
 			ps.setString(4, inputBookLanguage);
 			ps.setDate(5, bookIssueDate);
-
 			ps.execute();
 
 			ResultSet rs = ps.getResultSet();
@@ -273,7 +299,6 @@ public class Library {
 			PreparedStatement ps = dbh.createPreparedStatement(query);
 
 			ps.setInt(1, book.getId());
-
 			ps.executeUpdate();
 
 			books.remove(book);
@@ -292,7 +317,7 @@ public class Library {
 				.withValueChecker(new CustomerEmailValueChecker(libraryMenu, dbh)).withInputTrimming(true)
 				.read("Email");
 
-		String query = "INSERT INTO customers(first_name, last_name, email) VALUES (?, ?, ?)";
+		String query = "INSERT INTO customers(first_name, last_name, email) VALUES (?, ?, ?) RETURNING id, first_name, last_name, email";
 
 		try {
 			PreparedStatement ps = dbh.createPreparedStatement(query);
@@ -300,8 +325,20 @@ public class Library {
 			ps.setString(1, firstName);
 			ps.setString(2, lastName);
 			ps.setString(3, email);
-
 			ps.execute();
+
+			ResultSet rs = ps.getResultSet();
+
+			if (rs.next()) {
+				int customerId = rs.getInt(1);
+				String customerFirstName = rs.getString(2);
+				String customerLastName = rs.getString(3);
+				String customerEmail = rs.getString(4);
+
+				customers.add(new Customer(customerId, customerFirstName, customerLastName, customerEmail));
+			} else {
+				assert false;
+			}
 
 			ps.close();
 		} catch (SQLException e) {
@@ -311,16 +348,20 @@ public class Library {
 	}
 
 	public ArrayList<Book> searchBookByTitle() {
-		String bookTitle = textIO.newStringInputReader().withMaxLength(100).withInputTrimming(true).read("Title");
+		String bookTitle = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true).read("Title");
 
 		lastSearch = bookTitle;
 
 		ArrayList<Book> matchedBooks = new ArrayList<Book>();
 
-		for (Book book : books) {
-			if (book.getName().toLowerCase().contains(bookTitle.toLowerCase())) {
-				matchedBooks.add(book);
+		if (!bookTitle.isEmpty()) {
+			for (Book book : books) {
+				if (book.getName().toLowerCase().contains(bookTitle.toLowerCase())) {
+					matchedBooks.add(book);
+				}
 			}
+		} else {
+			matchedBooks = books;
 		}
 
 		return matchedBooks;
@@ -373,6 +414,60 @@ public class Library {
 		return matchedBooks;
 	}
 
-	// Add book => add new element in books => add new row in table books (DB)
+	public void markBookAsTaken(Book book, Customer customer) {
+		String query = "INSERT INTO taken_books(user_id, book_id, customer_id) VALUES (?, ?, ?) RETURNING return_date, created_at";
 
+		if (!book.isAvailable()) {
+			markBookAsAvailable(book);
+		}
+
+		try {
+			PreparedStatement ps = dbh.createPreparedStatement(query);
+
+			ps.setInt(1, getUser().getId());
+			ps.setInt(2, book.getId());
+			ps.setInt(3, customer.getId());
+			ps.execute();
+
+			ResultSet rs = ps.getResultSet();
+
+			if (rs.next()) {
+				Date returnDate = rs.getDate(1);
+				Date takenDate = rs.getDate(2);
+
+				book.setReturnDate(returnDate);
+				book.setTakenDate(takenDate);
+			} else {
+				assert false;
+			}
+
+			book.setCustomer(customer);
+
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to mark book as taken", 1012);
+		}
+	}
+
+	public void markBookAsAvailable(Book book) {
+		String query = "DELETE FROM taken_books WHERE book_id = ? AND customer_id = ?";
+
+		try {
+			PreparedStatement ps = dbh.createPreparedStatement(query);
+
+			ps.setInt(1, book.getId());
+			ps.setInt(2, book.getCustomer().getId());
+			ps.execute();
+
+			book.setCustomer(null);
+			book.setReturnDate(null);
+			book.setTakenDate(null);
+
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to remove previous book customer", 1013);
+		}
+	}
 }

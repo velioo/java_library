@@ -23,12 +23,15 @@ public class LibraryMenu {
 	private static final String SEARCH_MENU_LABEL_SEARCH_BY_TITLE = "Search by title";
 	private static final String SEARCH_MENU_LABEL_COMBINED_SEARCH = "Combined search by title, author, issue date, publisher, language";
 	private static final String SEARCH_MENU_LABEL_BACK = "Return to Main Menu";
-	private static final String BOOK_MENU_LABEL_AVAILABILITY = "Check availability";
+	// private static final String BOOK_MENU_LABEL_AVAILABILITY = "Check
+	// availability";
 	private static final String BOOK_MENU_LABEL_MARK_TAKEN = "Mark as taken";
 	private static final String BOOK_MENU_LABEL_MARK_AVAILABLE = "Mark as available";
-	private static final String BOOK_MENU_LABEL_SET_DEADLINE = "Set return deadline";
+	private static final String BOOK_MENU_LABEL_SET_DEADLINE = "Set return date";
 	private static final String BOOK_MENU_LABEL_REMOVE_BOOK = "Remove book";
 	private static final String BOOK_MENU_LABEL_BACK = "Return to Search Menu";
+	private static final String CUSTOMERS_MENU_LABEL_SEARCH_AGAIN = "Search again";
+	private static final String CUSTOMERS_MENU_LABEL_BACK = "Return to book menu";
 	private static final ArrayList<String> mainMenuPossibleValues = new ArrayList<String>();
 	private static final ArrayList<String> searchMenuPossibleValues = new ArrayList<String>();
 	private static final ArrayList<String> bookMenuPossibleValues = new ArrayList<String>();
@@ -53,7 +56,7 @@ public class LibraryMenu {
 		searchMenuPossibleValues.add(SEARCH_MENU_LABEL_COMBINED_SEARCH);
 		searchMenuPossibleValues.add(SEARCH_MENU_LABEL_BACK);
 
-		bookMenuPossibleValues.add(BOOK_MENU_LABEL_AVAILABILITY);
+		// bookMenuPossibleValues.add(BOOK_MENU_LABEL_AVAILABILITY);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_MARK_TAKEN);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_MARK_AVAILABLE);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_SET_DEADLINE);
@@ -179,23 +182,49 @@ public class LibraryMenu {
 	public void runBookMenu(Book book) {
 		while (true) {
 			terminal.resetToBookmark(EMPTY_BOOKMARK);
-			printHeader("Select option");
-			terminal.println("Selected book: '" + book.getName() + "' by " + book.getAuthor() + ", issue date - "
-					+ book.getIssueDate() + ", publisher - " + book.getPublisher() + ", language - "
-					+ book.getLanguage());
+			printHeader("Book information. Select option");
 
-			terminal.println("Status: " + (book.isAvailable() ? "Available"
+			terminal.println("Title      : " + book.getName());
+			terminal.println("Author     : " + book.getAuthor());
+			terminal.println("Issue date : " + book.getIssueDate());
+			terminal.println("Publisher  : " + book.getPublisher());
+			terminal.println("Language   : " + book.getLanguage());
+			terminal.println("\nStatus     : " + (book.isAvailable() ? "Available\n"
 					: "Taken by " + book.getCustomer().getBothNames() + " on " + book.getTakenDate()));
+
+			if (!book.isAvailable()) {
+				terminal.println("Return date: " + book.getReturnDate() + "\n");
+			}
 
 			String option = textIO.newStringInputReader().withNumberedPossibleValues(bookMenuPossibleValues)
 					.read("Option");
 
-			if (option.equals(BOOK_MENU_LABEL_AVAILABILITY)) {
+			if (option.equals(BOOK_MENU_LABEL_MARK_TAKEN)) {
+				String question = "mark the book as taken ?";
 
-			} else if (option.equals(BOOK_MENU_LABEL_MARK_TAKEN)) {
+				if (!book.isAvailable()) {
+					question += " The book is already taken by " + book.getCustomer().getBothNames()
+							+ ", you will overwrite its customer !!!";
+				}
 
+				if (isConfirmed(question)) {
+					Customer customer = runSelectCustomerMenu();
+
+					if (customer == null) {
+						continue;
+					}
+
+					library.markBookAsTaken(book, customer);
+					showSuccessScreen(
+							"Marked book '" + book.getName() + "' as taken by " + book.getCustomer().getBothNames());
+				}
 			} else if (option.equals(BOOK_MENU_LABEL_MARK_AVAILABLE)) {
 
+				if (isConfirmed("mark the book as available ?")) {
+					if (!book.isAvailable()) {
+						library.markBookAsAvailable(book);
+					}
+				}
 			} else if (option.equals(BOOK_MENU_LABEL_SET_DEADLINE)) {
 
 			} else if (option.equals(BOOK_MENU_LABEL_REMOVE_BOOK)) {
@@ -205,15 +234,78 @@ public class LibraryMenu {
 					continue;
 				}
 
-				library.removeBook(book);
-				showSuccessScreen("Removed book '" + book.getName() + "'");
-				break;
+				if (isConfirmed("remove the book ?")) {
+					library.removeBook(book);
+					showSuccessScreen("Removed book '" + book.getName() + "'");
+					break;
+				}
 			} else if (option.equals(BOOK_MENU_LABEL_BACK)) {
 				break;
 			} else {
 				assert false : "Invalid option";
 			}
 		}
+	}
+
+	private Customer runSelectCustomerMenu() {
+		ArrayList<Customer> customers = library.getCustomers();
+		ArrayList<String> formatedCustomers = new ArrayList<String>();
+
+		for (Customer customer : customers) {
+			String formatedCustomer = customer.getBothNames() + " <" + customer.getEmail() + ">";
+
+			formatedCustomers.add(formatedCustomer);
+		}
+
+		while (true) {
+			terminal.resetToBookmark(EMPTY_BOOKMARK);
+			printHeader("Search customers by name or email. To list all customers, don't enter anything.");
+
+			String searchCustomer = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).read("Customer");
+
+			ArrayList<String> filteredCustomers = new ArrayList<String>();
+
+			if (!searchCustomer.isEmpty()) {
+				for (String customer : formatedCustomers) {
+					if (customer.contains(searchCustomer)) {
+						filteredCustomers.add(customer);
+					}
+				}
+			} else {
+				filteredCustomers.addAll(formatedCustomers);
+			}
+
+			filteredCustomers.add(CUSTOMERS_MENU_LABEL_SEARCH_AGAIN);
+			filteredCustomers.add(CUSTOMERS_MENU_LABEL_BACK);
+
+			terminal.resetToBookmark(EMPTY_BOOKMARK);
+			printHeader("Select customer who will take the book");
+
+			String inputCustomer = textIO.newStringInputReader().withNumberedPossibleValues(filteredCustomers)
+					.read("Customer");
+
+			if (inputCustomer.equals(CUSTOMERS_MENU_LABEL_SEARCH_AGAIN)) {
+				continue;
+			} else if (inputCustomer.equals(CUSTOMERS_MENU_LABEL_BACK)) {
+				break;
+			} else {
+				Customer selectedCustomer = null;
+
+				for (Customer customer : customers) {
+					if ((customer.getBothNames() + " <" + customer.getEmail() + ">").equals(inputCustomer)) {
+						selectedCustomer = customer;
+					}
+				}
+
+				if (selectedCustomer != null) {
+					return selectedCustomer;
+				} else {
+					assert false : "Invalid selected customer";
+				}
+			}
+		}
+
+		return null;
 	}
 
 	public void showMatchedBooks(ArrayList<Book> books) {
@@ -267,13 +359,14 @@ public class LibraryMenu {
 	public void showFindBookByTitleScreen() {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
 
-		printHeader("Find book by title");
+		printHeader("Find book by title. To list all books don't enter anything.");
 	}
 
 	public void showCombinedSearchScreen() {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
 
-		printHeader("Combined search. Find book by title, author, issue date, publisher and language");
+		printHeader(
+				"Combined search. Find book by title, author, issue date, publisher and language. To skip a filter don't enter anything.");
 	}
 
 	public void showSuccessScreen(String msg) {
@@ -284,6 +377,13 @@ public class LibraryMenu {
 	public void showFailScreen(String msg) {
 		terminal.println(msg);
 		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to continue");
+	}
+
+	public boolean isConfirmed(String msg) {
+		terminal.println("Are you sure you want to " + msg);
+		String option = getTextIO().newStringInputReader().withNumberedPossibleValues("Yes", "No").read("Option");
+
+		return option.equals("Yes");
 	}
 
 	public void showError(String msg, int code) {

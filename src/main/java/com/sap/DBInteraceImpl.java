@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DBInteraceImpl implements DBInterface {
 	private static final String dbUrl = "jdbc:postgresql://localhost/jlibrary?user=jlibrary";
@@ -26,16 +27,8 @@ public class DBInteraceImpl implements DBInterface {
 		return preparedStatement;
 	}
 
-	/*
-	 * @Override public ResultSet select(PreparedStatement preparedStatement)
-	 * throws SQLException { // PreparedStatement st =
-	 * conn.prepareStatement("SELECT * FROM mytable // WHERE columnfoo = ?");
-	 * ResultSet resultSet = preparedStatement.exexexecuteQuery();
-	 * 
-	 * return resultSet; // while (rs.next()) // { //
-	 * System.out.print("Column 1 returned "); //
-	 * System.out.println(rs.getString(1)); // } rs.close(); // st.close(); //
-	 * return null; }
-	 */
-
+	public Statement createStatement() throws SQLException {
+		Statement statement = connection.createStatement();
+		return statement;
+	}
 }

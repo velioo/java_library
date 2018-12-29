@@ -31,7 +31,7 @@ CREATE TABLE books(
 
 CREATE TABLE taken_books(
     user_id integer REFERENCES users(id),
-    book_id integer REFERENCES books(id),
+    book_id integer UNIQUE REFERENCES books(id) ,
     customer_id integer REFERENCES customers(id),
     created_at timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
