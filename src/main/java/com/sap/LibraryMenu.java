@@ -27,7 +27,7 @@ public class LibraryMenu {
 	// availability";
 	private static final String BOOK_MENU_LABEL_MARK_TAKEN = "Mark as taken";
 	private static final String BOOK_MENU_LABEL_MARK_AVAILABLE = "Mark as available";
-	private static final String BOOK_MENU_LABEL_SET_DEADLINE = "Set return date";
+	private static final String BOOK_MENU_LABEL_SET_DEADLINE = "Set deadline";
 	private static final String BOOK_MENU_LABEL_REMOVE_BOOK = "Remove book";
 	private static final String BOOK_MENU_LABEL_BACK = "Return to Search Menu";
 	private static final String CUSTOMERS_MENU_LABEL_SEARCH_AGAIN = "Search again";
@@ -136,7 +136,7 @@ public class LibraryMenu {
 			if (option.equals(MAIN_MENU_LABEL_ADD_NEW_BOOK)) {
 				showAddBookScreen();
 				library.addNewBook();
-				showSuccessScreen("Added new book");
+				showSuccessScreen("added new book");
 			} else if (option.equals(MAIN_MENU_LABEL_SEARCH_BOOK)) {
 				runSearchMenu();
 			} else if (option.equals(MAIN_MENU_LABEL_LIST_PEOPLE)) {
@@ -145,7 +145,7 @@ public class LibraryMenu {
 			} else if (option.equals(MAIN_MENU_LABEL_ADD_NEW_CUSTOMER)) {
 				showAddCustomerScreen();
 				library.addNewCustomer();
-				showSuccessScreen("Added new customer");
+				showSuccessScreen("added new customer");
 			} else if (option.equals(MAIN_MENU_LABEL_EXIT)) {
 				terminal.dispose();
 				break;
@@ -200,11 +200,11 @@ public class LibraryMenu {
 					.read("Option");
 
 			if (option.equals(BOOK_MENU_LABEL_MARK_TAKEN)) {
-				String question = "mark the book as taken ?";
+				String question = "mark the book as taken?";
 
 				if (!book.isAvailable()) {
 					question += " The book is already taken by " + book.getCustomer().getBothNames()
-							+ ", you will overwrite its customer !!!";
+							+ ", you will overwrite its customer!!!";
 				}
 
 				if (isConfirmed(question)) {
@@ -216,27 +216,35 @@ public class LibraryMenu {
 
 					library.markBookAsTaken(book, customer);
 					showSuccessScreen(
-							"Marked book '" + book.getName() + "' as taken by " + book.getCustomer().getBothNames());
+							"marked book '" + book.getName() + "' as taken by " + book.getCustomer().getBothNames());
 				}
 			} else if (option.equals(BOOK_MENU_LABEL_MARK_AVAILABLE)) {
 
-				if (isConfirmed("mark the book as available ?")) {
+				if (isConfirmed("mark the book as available?")) {
 					if (!book.isAvailable()) {
 						library.markBookAsAvailable(book);
 					}
 				}
 			} else if (option.equals(BOOK_MENU_LABEL_SET_DEADLINE)) {
-
-			} else if (option.equals(BOOK_MENU_LABEL_REMOVE_BOOK)) {
-
-				if (!book.isAvailable()) {
-					showFailScreen("Cannot remove book which is taken by someone");
+				if (book.isAvailable()) {
+					showFailScreen("Cannot set a deadline to a book which is not taken by anyone");
 					continue;
 				}
 
-				if (isConfirmed("remove the book ?")) {
+				if (isConfirmed("change the deadline?")) {
+					library.changeBookDeadline(book);
+					showSuccessScreen("changed the book's deadline");
+				}
+			} else if (option.equals(BOOK_MENU_LABEL_REMOVE_BOOK)) {
+
+				if (!book.isAvailable()) {
+					showFailScreen("Cannot remove a book which is still taken by someone");
+					continue;
+				}
+
+				if (isConfirmed("remove the book?")) {
 					library.removeBook(book);
-					showSuccessScreen("Removed book '" + book.getName() + "'");
+					showSuccessScreen("removed book '" + book.getName() + "'");
 					break;
 				}
 			} else if (option.equals(BOOK_MENU_LABEL_BACK)) {

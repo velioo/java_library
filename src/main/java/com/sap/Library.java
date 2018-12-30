@@ -348,7 +348,8 @@ public class Library {
 	}
 
 	public ArrayList<Book> searchBookByTitle() {
-		String bookTitle = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true).read("Title");
+		String bookTitle = textIO.newStringInputReader().withMinLength(0).withMaxLength(100).withInputTrimming(true)
+				.read("Title");
 
 		lastSearch = bookTitle;
 
@@ -453,6 +454,8 @@ public class Library {
 	public void markBookAsAvailable(Book book) {
 		String query = "DELETE FROM taken_books WHERE book_id = ? AND customer_id = ?";
 
+		assert !book.isAvailable() : "Cannot mark a book as available if it already is";
+
 		try {
 			PreparedStatement ps = dbh.createPreparedStatement(query);
 
@@ -468,6 +471,42 @@ public class Library {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			libraryMenu.showError("Failed to remove previous book customer", 1013);
+		}
+	}
+
+	public void changeBookDeadline(Book book) {
+		String query = "UPDATE taken_books SET return_date = ? WHERE book_id = ? AND customer_id = ?";
+
+		assert !book.isAvailable() : "Cannot set return date on a book which is not taken by anyone";
+
+		String inputReturnDate = textIO.newStringInputReader().withPattern(DATE_REGEX).withInputTrimming(true)
+				.read("Return date (yyyy-MM-dd)");
+
+		Date bookReturnDate = null;
+
+		try {
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			java.util.Date date = df.parse(inputReturnDate);
+			bookReturnDate = new Date(date.getTime());
+		} catch (ParseException e) {
+			libraryMenu.showError("Failed to parse input return date", 1014);
+			e.printStackTrace();
+		}
+
+		try {
+			PreparedStatement ps = dbh.createPreparedStatement(query);
+
+			ps.setDate(1, bookReturnDate);
+			ps.setInt(2, book.getId());
+			ps.setInt(3, book.getCustomer().getId());
+			ps.execute();
+
+			book.setReturnDate(bookReturnDate);
+
+			ps.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			libraryMenu.showError("Failed to remove previous book customer", 1015);
 		}
 	}
 }
