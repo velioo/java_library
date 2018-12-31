@@ -23,8 +23,6 @@ public class LibraryMenu {
 	private static final String SEARCH_MENU_LABEL_SEARCH_BY_TITLE = "Search by title";
 	private static final String SEARCH_MENU_LABEL_COMBINED_SEARCH = "Combined search by title, author, issue date, publisher, language";
 	private static final String SEARCH_MENU_LABEL_BACK = "Return to Main Menu";
-	// private static final String BOOK_MENU_LABEL_AVAILABILITY = "Check
-	// availability";
 	private static final String BOOK_MENU_LABEL_MARK_TAKEN = "Mark as taken";
 	private static final String BOOK_MENU_LABEL_MARK_AVAILABLE = "Mark as available";
 	private static final String BOOK_MENU_LABEL_SET_DEADLINE = "Set deadline";
@@ -56,7 +54,6 @@ public class LibraryMenu {
 		searchMenuPossibleValues.add(SEARCH_MENU_LABEL_COMBINED_SEARCH);
 		searchMenuPossibleValues.add(SEARCH_MENU_LABEL_BACK);
 
-		// bookMenuPossibleValues.add(BOOK_MENU_LABEL_AVAILABILITY);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_MARK_TAKEN);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_MARK_AVAILABLE);
 		bookMenuPossibleValues.add(BOOK_MENU_LABEL_SET_DEADLINE);
@@ -140,8 +137,8 @@ public class LibraryMenu {
 			} else if (option.equals(MAIN_MENU_LABEL_SEARCH_BOOK)) {
 				runSearchMenu();
 			} else if (option.equals(MAIN_MENU_LABEL_LIST_PEOPLE)) {
-				// TODO:
-				// showTakenBooksScreen();
+				showTakenBooksScreen();
+				showTakenBooks();
 			} else if (option.equals(MAIN_MENU_LABEL_ADD_NEW_CUSTOMER)) {
 				showAddCustomerScreen();
 				library.addNewCustomer();
@@ -227,7 +224,7 @@ public class LibraryMenu {
 				}
 			} else if (option.equals(BOOK_MENU_LABEL_SET_DEADLINE)) {
 				if (book.isAvailable()) {
-					showFailScreen("Cannot set a deadline to a book which is not taken by anyone");
+					showContinueScreen("Cannot set a deadline to a book which is not taken by anyone");
 					continue;
 				}
 
@@ -238,7 +235,7 @@ public class LibraryMenu {
 			} else if (option.equals(BOOK_MENU_LABEL_REMOVE_BOOK)) {
 
 				if (!book.isAvailable()) {
-					showFailScreen("Cannot remove a book which is still taken by someone");
+					showContinueScreen("Cannot remove a book which is still taken by someone");
 					continue;
 				}
 
@@ -352,6 +349,25 @@ public class LibraryMenu {
 		}
 	}
 
+	public void showTakenBooks() {
+		ArrayList<Book> books = library.getBooks();
+		ArrayList<Book> takenBooks = new ArrayList<Book>();
+
+		for (Book book : books) {
+			if (!book.isAvailable()) {
+				takenBooks.add(book);
+			}
+		}
+
+		for (Book book : takenBooks) {
+			terminal.println("'" + book.getName() + "'" + " taken by " + book.getCustomer().getBothNames() + " <"
+					+ book.getCustomer().getEmail() + "> on " + book.getTakenDate() + ". Deadline - "
+					+ book.getReturnDate());
+		}
+
+		showContinueScreen();
+	}
+
 	public void showAddBookScreen() {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
 
@@ -362,6 +378,12 @@ public class LibraryMenu {
 		terminal.resetToBookmark(EMPTY_BOOKMARK);
 
 		printHeader("Add new customer");
+	}
+
+	public void showTakenBooksScreen() {
+		terminal.resetToBookmark(EMPTY_BOOKMARK);
+
+		printHeader("People who haven't returned books");
 	}
 
 	public void showFindBookByTitleScreen() {
@@ -382,8 +404,12 @@ public class LibraryMenu {
 		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to continue");
 	}
 
-	public void showFailScreen(String msg) {
+	public void showContinueScreen(String msg) {
 		terminal.println(msg);
+		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to continue");
+	}
+
+	public void showContinueScreen() {
 		getTextIO().newStringInputReader().withMinLength(0).read("Press Enter to continue");
 	}
 
