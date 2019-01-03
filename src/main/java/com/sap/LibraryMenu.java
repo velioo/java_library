@@ -1,8 +1,6 @@
 package com.sap;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.beryx.textio.TextIO;
 import org.beryx.textio.TextIoFactory;
